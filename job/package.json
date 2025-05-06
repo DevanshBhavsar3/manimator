@@ -1,0 +1,22 @@
+{
+  "name": "job",
+  "module": "index.ts",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/index.js",
+    "dev": "bun run dev && bun run build",
+    "render": "manim ./scripts/main.py $SCENE_NAME",
+    "upload": "node dist/upload.js",
+    "job": "npm run start && npm run render && npm run upload"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.16.0",
+    "dotenv": "^16.5.0"
+  }
+}
