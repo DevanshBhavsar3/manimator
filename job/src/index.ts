@@ -1,13 +1,13 @@
 import { downloadFile } from "./gcs";
 
-const { SCRIPT_URL } = process.env;
+const { PROJECT_ID } = process.env;
 
 async function main() {
   try {
-    if (!SCRIPT_URL) return;
+    if (!PROJECT_ID) return;
 
     // Download the script file from GCS
-    await downloadFile(SCRIPT_URL);
+    await downloadFile(PROJECT_ID);
   } catch (e) {
     console.error(e);
     throw new Error(e as unknown as string);

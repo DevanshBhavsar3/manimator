@@ -6,9 +6,9 @@ const storage = new Storage({
   keyFilename: `${process.cwd()}/credentials/gcs_credentials.json`,
 });
 
-export async function downloadFile(gsuri: string) {
-  const [bucketName, ...filepath] = gsuri.slice("gs://".length).split("/");
-  const fileName = filepath.join("/");
+export async function downloadFile(projectId: string) {
+  const bucketName = "code-video-bucket";
+  const fileName = `${projectId}/main.py`;
 
   await storage
     .bucket(bucketName as string)
@@ -18,19 +18,16 @@ export async function downloadFile(gsuri: string) {
     });
 }
 
-export async function uploadVideo(scriptUri: string, videoPath: string) {
+export async function uploadVideo(projectId: string, videoPath: string) {
   const gcs = storage.bucket("code-video-bucket");
 
-  const splitUrl = scriptUri.split("/");
-  const storagepath = `${splitUrl[3]}/${splitUrl[4]}/animation.mp4`;
+  const storagepath = `${projectId}/animation.mp4`;
 
-  const result = await gcs.upload(videoPath, {
+  await gcs.upload(videoPath, {
     destination: storagepath,
     predefinedAcl: "publicRead",
     metadata: {
       contentType: "video/mp4",
     },
   });
-
-  return result[0].publicUrl();
 }
