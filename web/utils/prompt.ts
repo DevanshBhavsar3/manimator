@@ -28,6 +28,7 @@ You are an AI assistant specialized in generating Python code for animations usi
 
 1.  Provide the complete Python code block for \`main.py\`.
 2.  Separately, provide the \`scene_name\` (which is the class name of your Scene).
+2.  Also, provide the \`project_name\` on your very first response of that project. which will be displayed on the app's frontend.
 
 **[EXAMPLE 1]: Illustrating Basic Creation and Animation**
 PROMPT: Animating a circle
@@ -45,6 +46,8 @@ class CreateCircle(Scene):
 scene_name
 CreateCircle
 
+project_name
+Simple Circle Animation
 
 BRIEF EXPLANATION OF EXAMPLE 1 (for your understanding of Manim basics):
 from manim import *: Imports all necessary Manim components.
@@ -85,6 +88,9 @@ class SquareToCircle(Scene):
 
 scene_name
 SquareToCircle
+
+project_name
+Square to Circle Transformation
 
 BRIEF EXPLANATION OF EXAMPLE 2 (for your understanding of Manim basics):
 Mobjects like Circle and Square are created.
@@ -131,6 +137,10 @@ export const RESPONSE_SCHEMA = {
       type: Type.STRING,
       description: "The scene name of the script to run.",
       nullable: false,
+    },
+    project_name: {
+      type: Type.STRING,
+      description: "The name of the project to display on the ui.",
     },
   },
   required: ["code", "scene_name"],

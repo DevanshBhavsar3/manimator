@@ -1,18 +1,10 @@
 import { JobsClient } from "@google-cloud/run";
 
 const runClient = new JobsClient({
-  projectId: "",
-  credentials: {
-    type: "service_account",
-    project_id: process.env.GCS_PROJECT_ID,
-    private_key_id: process.env.GCS_PRIVATE_KEY_ID,
-    private_key: process.env.GCS_PRIVATE_KEY,
-    client_email: process.env.GCS_CLIENT_EMAIL,
-    client_id: process.env.GCS_CLIENT_ID,
-  },
+  keyFilename: `${process.cwd()}/credentials/gcs_credentials.json`,
 });
 
-export async function triggerRunnerJob(scriptURL: string, sceneName: string) {
+export async function triggerRunnerJob(projectId: string, sceneName: string) {
   const request = {
     name: "projects/manim-generator/locations/asia-south1/jobs/manim-generator",
     overrides: {
@@ -20,8 +12,8 @@ export async function triggerRunnerJob(scriptURL: string, sceneName: string) {
         {
           env: [
             {
-              name: "SCRIPT_URL",
-              value: scriptURL,
+              name: "PROJECT_ID",
+              value: projectId,
             },
             {
               name: "SCENE_NAME",
@@ -33,8 +25,5 @@ export async function triggerRunnerJob(scriptURL: string, sceneName: string) {
     },
   };
 
-  const [operation] = await runClient.runJob(request);
-  const [response] = await operation.promise();
-
-  console.log(response);
+  await runClient.runJob(request);
 }

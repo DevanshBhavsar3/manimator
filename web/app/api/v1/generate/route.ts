@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
-import { uploadToCloudStorage } from "../../../../utils/uploadToStorage";
-import { v4 } from "uuid";
+import { uploadToCloudStorage } from "../../../../utils/gcs";
 import { triggerRunnerJob } from "@/utils/triggerJob";
 import { RESPONSE_SCHEMA, SYSTEM_PROMPT } from "@/utils/prompt";
+import { client } from "@/db";
+import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ msg: "Unauthrized." });
+    }
+
     const data = await req.json();
+
     const prompt = data.prompt;
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -23,20 +31,31 @@ export async function POST(req: NextRequest) {
     });
 
     const aiResponse = response.text;
-    const parsedResponse = JSON.parse(aiResponse as string);
+    const { code, scene_name, project_name } = JSON.parse(aiResponse as string);
 
-    const code = parsedResponse.code;
-    const scene_name = parsedResponse.scene_name;
+    const project = await client.project.create({
+      data: {
+        name: project_name || scene_name,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
 
-    console.log(code);
-    console.log(scene_name);
+    await client.message.create({
+      data: {
+        projectId: project.id,
+        content: prompt,
+        sender: "User",
+      },
+    });
 
-    const uid = v4();
-    const link = await uploadToCloudStorage(code, uid);
+    await uploadToCloudStorage(code, project.id);
 
-    const videoUrl = await triggerRunnerJob(link, scene_name);
+    await triggerRunnerJob(project.id, scene_name);
 
-    console.log(videoUrl);
+    return NextResponse.json({ projectId: project.id });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ msg: "Error " });

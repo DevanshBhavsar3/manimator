@@ -1,52 +1,55 @@
 "use client";
 
-import React, { useState } from "react";
+import { Button } from "@/components/ui/Button";
+import { RedirectToSignIn, SignIn, useAuth } from "@clerk/nextjs";
+import { Send } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React, { useRef, useState } from "react";
 
 export default function Home() {
-  const [prompt, setPrompt] = useState("");
-  const [history, setHistory] = useState<string[]>([]);
-  const [code, setCode] = useState("");
+  const auth = useAuth();
+
+  const [redirect, setRedirect] = useState(false);
+  const router = useRouter();
+  const promptRef = useRef("");
 
   async function sendPrompt() {
-    setHistory([...history, prompt]);
+    if (!auth.userId) {
+      setRedirect(true);
+      return;
+    }
 
     const response = await fetch("http://localhost:3000/api/v1/generate", {
       method: "POST",
       body: JSON.stringify({
-        prompt: prompt,
+        prompt: promptRef.current,
       }),
     });
     const data = await response.json();
 
-    setCode(data.code);
+    router.push(`/project/${data.projectId}`);
   }
 
   return (
-    <div className="bg-black text-white min-h-screen flex">
-      <div className="w-1/4 bg-zinc-900 min-h-screen flex flex-col justify-between items-start p-4">
-        <div className="w-full flex flex-col justify-center items-center gap-3">
-          {history.map((h, index) => (
-            <span key={index} className="bg-zinc-600 w-full p-2 rounded-sm">
-              {h}
-            </span>
-          ))}
-        </div>
-        <div className="h-15 w-full flex justify-center items-center">
-          <input
-            type="text"
-            className="px-4 py-2 border border-neutral-300 w-full h-full outline-none"
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-
-          <button
-            onClick={sendPrompt}
-            className="bg-blue-400 text-white px-4 py-2 h-full cursor-pointer"
-          >
-            Send
-          </button>
-        </div>
+    <div className="w-full bg-zinc-900 min-h-screen flex flex-col justify-center items-center p-4 gap-5">
+      <h1 className="text-3xl font-serif">Manimator</h1>
+      <div className="w-1/2 h-32 relative">
+        <textarea
+          className="px-4 py-2 rounded-xl bg-neutral-700 border border-neutral-500 w-full h-full outline-none resize-none text-neutral-100 text-lg"
+          placeholder={"What do you want to animate??"}
+          onChange={(e) => {
+            promptRef.current = e.target.value;
+          }}
+        />
+        <Button
+          onClick={sendPrompt}
+          variant="primary"
+          className="absolute right-3 bottom-2 rounded-xl"
+        >
+          <Send size={24} className="m-2 text-black" />
+        </Button>
       </div>
-      <div className="w-full">{code && <span>{code}</span>}</div>
+      {redirect && <RedirectToSignIn />}
     </div>
   );
 }
