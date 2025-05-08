@@ -1,4 +1,4 @@
-FROM manimcommunity/manim:stable
+FROM manimcommunity/manim
 
 WORKDIR /app
 

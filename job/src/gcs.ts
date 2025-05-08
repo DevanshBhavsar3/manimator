@@ -6,9 +6,9 @@ const storage = new Storage({
   keyFilename: `${process.cwd()}/credentials/gcs_credentials.json`,
 });
 
-export async function downloadFile(projectId: string) {
+export async function downloadFile(projectId: string, versionId: string) {
   const bucketName = "code-video-bucket";
-  const fileName = `${projectId}/main.py`;
+  const fileName = `${projectId}/${versionId}/main.py`;
 
   await storage
     .bucket(bucketName as string)
@@ -18,10 +18,14 @@ export async function downloadFile(projectId: string) {
     });
 }
 
-export async function uploadVideo(projectId: string, videoPath: string) {
+export async function uploadVideo(
+  projectId: string,
+  versionId: string,
+  videoPath: string
+) {
   const gcs = storage.bucket("code-video-bucket");
 
-  const storagepath = `${projectId}/animation.mp4`;
+  const storagepath = `${projectId}/${versionId}/animation.mp4`;
 
   await gcs.upload(videoPath, {
     destination: storagepath,

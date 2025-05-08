@@ -145,3 +145,27 @@ export const RESPONSE_SCHEMA = {
   },
   required: ["code", "scene_name"],
 };
+
+export function createContext(
+  messages: { content: string; sender: "AI" | "User" }[],
+  code?: string
+) {
+  let context = `${SYSTEM_PROMPT}.
+  [CONTEXT]:
+  This below is the last code you have generated and followed by the the messages from the user.
+
+  [CODE]
+  ${code}
+
+  [PREVIOUS USER MESSAGES]
+  `;
+
+  messages.map(
+    (m) =>
+      (context += `
+    User: 
+    ${m.content}`)
+  );
+
+  return context;
+}

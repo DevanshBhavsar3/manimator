@@ -43,17 +43,20 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    await client.message.create({
+    const message = await client.message.create({
       data: {
         projectId: project.id,
         content: prompt,
         sender: "User",
       },
+      select: {
+        id: true,
+      },
     });
 
-    await uploadToCloudStorage(code, project.id);
+    await uploadToCloudStorage(code, project.id, message.id);
 
-    await triggerRunnerJob(project.id, scene_name);
+    await triggerRunnerJob(project.id, message.id.toString(), scene_name);
 
     return NextResponse.json({ projectId: project.id });
   } catch (e) {

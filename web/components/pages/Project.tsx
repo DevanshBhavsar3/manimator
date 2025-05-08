@@ -1,15 +1,15 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "../ui/Button";
-import { Send } from "lucide-react";
 import { Sender } from "@prisma/client";
+import { PromptArea } from "../ui/PromptArea";
+import { VersionContent } from "@/types";
 
 interface Message {
   id: number;
   content: string;
   projectId: string;
+  createdAt: Date;
   sender: Sender;
 }
 
@@ -22,47 +22,54 @@ interface ProjectPageProps {
   };
 }
 
-// TODO: Add a feture to edit existing code
 export default function ProjectPage({ project }: ProjectPageProps) {
   const promptRef = useRef("");
+  const [tab, setTab] = useState<number>(0);
   const [messages, setMessages] = useState<Message[]>(project.messages);
-  const [video, setVideo] = useState("");
-
-  console.log(project);
+  const [content, setContent] = useState<VersionContent[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<VersionContent | null>(
+    null
+  );
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (video) return;
+    fetchContent(project.id);
+  }, []);
 
-    async function fetchData() {
-      const response = await fetch("http://localhost:3000/api/v1/video", {
+  async function fetchContent(filter: string) {
+    try {
+      const response = await fetch("http://localhost:3000/api/v1/content", {
         method: "POST",
         body: JSON.stringify({
-          projectId: project.id,
+          filter,
         }),
       });
+
       const data = await response.json();
 
-      if ((data.result as string).startsWith("http")) {
-        setVideo(data.result);
+      if (data.content && data.content.length > 0) {
+        setContent(data.content);
+        setSelectedVersion(data.content[0]);
       }
+    } catch (e) {
+      console.error(e);
     }
-
-    const interval = setInterval(() => {
-      fetchData();
-    }, 3000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [video]);
+  }
 
   async function sendPrompt() {
+    setLoading(true);
+
     const response = await fetch("http://localhost:3000/api/v1/edit", {
       method: "POST",
       body: JSON.stringify({
         prompt: promptRef.current,
+        projectId: project.id,
       }),
     });
+    const { message: newMessage } = await response.json();
+
+    setMessages([...messages, newMessage]);
+    setLoading(false);
   }
 
   return (
@@ -79,35 +86,70 @@ export default function ProjectPage({ project }: ProjectPageProps) {
           ))}
         </div>
         <div className="w-full h-32 relative">
-          <textarea
-            className="px-4 py-2 rounded-xl bg-neutral-700 border border-neutral-500 w-full h-full outline-none resize-none text-neutral-100 text-lg"
-            placeholder={"Please change the color to white."}
-            onChange={(e) => {
-              promptRef.current = e.target.value;
-            }}
+          <PromptArea
+            onSubmit={sendPrompt}
+            promptRef={promptRef}
+            loading={loading}
           />
-          <Button
-            onClick={sendPrompt}
-            variant="primary"
-            className="absolute right-3 bottom-2 rounded-xl"
-          >
-            <Send size={24} className="m-2 text-black" />
-          </Button>
         </div>
       </div>
       <div className="w-full min-h-screen flex flex-col justify-between items-center">
         <div className="w-full bg-neutral-700 py-2 px-4 border-b border-neutral-500">
           <h1 className="text-md font-bold">{project.name}</h1>
         </div>
-        <div className="w-full h-full flex justify-center items-center">
-          {video ? (
-            <iframe src={video} className="w-full h-full"></iframe>
-          ) : (
+        <div className="flex w-full h-full justify-between items-center">
+          <div className="w-full h-full flex flex-col justify-between items-start p-2">
             <div className="flex justify-center items-center gap-2">
-              <div className="w-6 h-6 border-2 border-neutral-600 border-t-white rounded-full animate-spin" />
-              <span>Rendering...</span>
+              <button
+                className={`px-2 py-1 text-sm cursor-pointer ${
+                  tab == 0 && "border-b font-medium"
+                }`}
+                onClick={() => setTab(0)}
+              >
+                Video
+              </button>
+              <button
+                className={`px-2 py-1 text-sm cursor-pointer ${
+                  tab == 1 && "border-b font-medium"
+                }`}
+                onClick={() => setTab(1)}
+              >
+                Code
+              </button>
             </div>
-          )}
+
+            {tab == 0 ? (
+              selectedVersion?.videoUrl ? (
+                <div className="w-full h-full flex justify-center items-center">
+                  <iframe
+                    src={selectedVersion.videoUrl}
+                    className="w-full aspect-video border border-neutral-600 rounded-md"
+                  ></iframe>
+                </div>
+              ) : (
+                <div className="flex justify-center items-center gap-2 w-full h-full">
+                  <div className="w-6 h-6 border-2 border-neutral-600 border-t-white rounded-full animate-spin" />
+                  <span>Rendering...</span>
+                </div>
+              )
+            ) : (
+              <div className="flex justify-center items-center gap-2 w-full h-full">
+                <span>{selectedVersion?.code}</span>
+              </div>
+            )}
+          </div>
+          <div className="bg-neutral-800 min-w-1/5 h-full px-4 py-2 border-l border-neutral-700 font-medium">
+            <h3 className="my-5">Versions</h3>
+            <div className="flex flex-col gap-2">
+              {content.map((version) => (
+                <iframe
+                  key={version.version}
+                  src={version.videoUrl}
+                  className="w-full h-full rounded-md"
+                ></iframe>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
